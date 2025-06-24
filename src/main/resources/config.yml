@@ -2,7 +2,7 @@
 infection-interval-seconds: 300
 
 # radius around each infected player to attempt spread
-proximity-radius: 15.0
+proximity-radius: 5.0
 
 # chance [0.0-1.0] to infect when within proximity
 proximity-chance: 0.25

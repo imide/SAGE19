@@ -1,5 +1,6 @@
 package com.earthpol.sage;
 
+import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
 import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -96,8 +97,11 @@ public class SAGE19 extends JavaPlugin {
         for (UUID id : infected) {
             Player p = Bukkit.getPlayer(id);
             if (p != null && p.isOnline()) {
-                p.addPotionEffect(new PotionEffect(
-                        PotionEffectType.OOZING, Integer.MAX_VALUE, 0, true, true, true));
+                EntityScheduler scheduler = p.getScheduler();
+                scheduler.execute(this, () -> {
+                    p.addPotionEffect(new PotionEffect(
+                            PotionEffectType.OOZING, Integer.MAX_VALUE, 0, true, true, true));
+                }, null, 20);
             }
         }
     }
@@ -106,8 +110,11 @@ public class SAGE19 extends JavaPlugin {
         if (isWearingPumpkin(p)) return;
         if (infected.add(p.getUniqueId())) {
             p.sendMessage(ChatColor.RED + "You have been infected with SAGE-19.");
-            p.addPotionEffect(new PotionEffect(
-                    PotionEffectType.OOZING, Integer.MAX_VALUE, 0, true, true, true));
+            EntityScheduler scheduler = p.getScheduler();
+            scheduler.execute(this, () -> {
+                p.addPotionEffect(new PotionEffect(
+                        PotionEffectType.OOZING, Integer.MAX_VALUE, 0, true, true, true));
+            }, null, 20);
             savePlayerData(p);
         }
     }
@@ -115,7 +122,10 @@ public class SAGE19 extends JavaPlugin {
     public void uninfectPlayer(Player p) {
         if (infected.remove(p.getUniqueId())) {
             p.sendMessage(ChatColor.GREEN + "You have been cured of SAGE-19.");
-            p.removePotionEffect(PotionEffectType.OOZING);
+            EntityScheduler scheduler = p.getScheduler();
+            scheduler.execute(this, () -> {
+                p.removePotionEffect(PotionEffectType.OOZING);
+            }, null, 20);
             savePlayerData(p);
         }
     }
