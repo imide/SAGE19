@@ -1,0 +1,11 @@
+# seconds between each automatic spread check
+infection-interval-seconds: 300
+
+# radius around each infected player to attempt spread
+proximity-radius: 15.0
+
+# chance [0.0-1.0] to infect when within proximity
+proximity-chance: 0.25
+
+# chance [0.0-1.0] to infect on player-vs-player hit
+hit-chance: 0.35

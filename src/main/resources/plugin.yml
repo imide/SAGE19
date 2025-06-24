@@ -1,0 +1,24 @@
+name: SAGE19
+version: '1.0.0'
+main: com.earthpol.sage.SAGE19
+api-version: '1.21'
+authors: [ 0xBit ]
+folia-supported: true
+website: https://earthpol.com
+commands:
+  infect:
+    description: Infect a player with SAGE19.
+    usage: /infect <player>
+    permission: sage19.admin
+  uninfect:
+    description: Cure a player of SAGE19.
+    usage: /uninfect <player>
+    permission: sage19.admin
+  sage19:
+    description: “Modify SAGE19 settings on the fly (interval, radius, proximityChance, hitChance)”
+    usage: “/sage19 <setting> <value>”
+    permission: sage19.admin
+permissions:
+  sage19.admin:
+    description: Allows use of /infect, /sage19 and /uninfect commands.
+    default: op
