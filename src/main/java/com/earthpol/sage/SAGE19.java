@@ -2,10 +2,7 @@ package com.earthpol.sage;
 
 import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
 import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -81,13 +78,35 @@ public class SAGE19 extends JavaPlugin {
     private void runGlobalScan() {
         Location safe = Bukkit.getWorlds().get(0).getSpawnLocation();
         RegionScheduler regionScheduler = getServer().getRegionScheduler();
+
+        // Region lock to safely iterate 'infected'
         regionScheduler.run(this, safe, task -> {
-            reapplyEffects();
             for (UUID id : infected) {
                 Player p = Bukkit.getPlayer(id);
                 if (p != null && p.isOnline()) {
-                    spreadForPlayer(p);
-                    randomEvent(p);
+                    // Schedule *all* entity operations on that player's thread:
+                    EntityScheduler sch = p.getScheduler();
+                    sch.execute(this, () -> {
+                        // 1) Spread logic (this may call infectPlayer, which you already schedule)
+                        spreadForPlayer(p);
+
+                        // 2) Re-apply infinite OOZING
+                        p.addPotionEffect(new PotionEffect(
+                                PotionEffectType.OOZING, Integer.MAX_VALUE, 0, true, true, true
+                        ));
+
+                        // 3) Random event
+                        double rand = Math.random();
+                        if (rand < 0.333) {
+                            // nothing
+                        } else if (rand < 0.666) {
+                            p.playSound(p.getLocation(), Sound.ENTITY_PANDA_SNEEZE, 0.5f, 1f);
+                        } else {
+                            p.addPotionEffect(new PotionEffect(
+                                    PotionEffectType.NAUSEA, 4 * 20, 0, true, false, true
+                            ));
+                        }
+                    }, null, 0L);
                 }
             }
         });
@@ -224,6 +243,13 @@ public class SAGE19 extends JavaPlugin {
         private final SAGE19 plugin;
         Sage19Command(SAGE19 plugin) { this.plugin = plugin; }
         @Override public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+            if (args.length == 0) {
+                // status report for everyone
+                int count = plugin.infected.size();
+                sender.sendMessage(ChatColor.GREEN + "SAGE-19 infected players: " + count);
+                return true;
+            }
+
             if (!sender.hasPermission("sage19.admin")) {
                 sender.sendMessage(ChatColor.RED + "You lack permission.");
                 return true;
