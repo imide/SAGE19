@@ -9,3 +9,12 @@ proximity-chance: 0.25
 
 # chance [0.0-1.0] to infect on player-vs-player hit
 hit-chance: 0.35
+
+# Chance [0.0–1.0] that eating a golden apple while Weakness will cure SAGE-19
+cure-success-chance: 0.95
+
+# new toggle for whether golden-apple curing is active
+curing-enabled: false
+
+# Chance [0.0–1.0] that a carved‐pumpkin wearer still gets infected
+mask-infection-chance: 0.05

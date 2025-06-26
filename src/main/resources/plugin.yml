@@ -17,7 +17,6 @@ commands:
   sage19:
     description: “Modify SAGE19 settings on the fly (interval, radius, proximityChance, hitChance)”
     usage: “/sage19 <setting> <value>”
-    permission: sage19.admin
 permissions:
   sage19.admin:
     description: Allows use of /infect, /sage19 and /uninfect commands.
