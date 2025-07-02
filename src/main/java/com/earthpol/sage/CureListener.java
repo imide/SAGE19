@@ -9,6 +9,8 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffectType;
 
+import static com.earthpol.sage.SageVirusCultureFactory.createVirusCulture;
+
 public class CureListener implements Listener {
     private final SAGE19 plugin;
 
@@ -34,7 +36,7 @@ public class CureListener implements Listener {
             plugin.uninfectPlayer(p);
             p.sendMessage(ChatColor.GOLD + "You feel a sudden surge of strength—SAGE-19 cured!");
             if (Math.random() < cultureDropChance) {
-                ItemStack virusCulture = plugin.createVirusCulture();
+                ItemStack virusCulture = createVirusCulture(plugin);
                 p.getWorld().dropItemNaturally(p.getLocation(), virusCulture);
                 p.sendMessage(ChatColor.GRAY + "A live culture of the virus was extracted from you...");
             }

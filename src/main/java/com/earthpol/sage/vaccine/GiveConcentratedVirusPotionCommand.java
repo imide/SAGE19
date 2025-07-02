@@ -1,8 +1,8 @@
 package com.earthpol.sage.vaccine;
 
 import com.earthpol.sage.SAGE19;
-import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -10,25 +10,22 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-import static com.earthpol.sage.SageVirusCultureFactory.createVirusCulture;
-
-public class GiveVirusCultureCommand implements CommandExecutor {
+public class GiveConcentratedVirusPotionCommand implements CommandExecutor {
     private final SAGE19 plugin;
 
-    public GiveVirusCultureCommand(SAGE19 plugin) {
+    public GiveConcentratedVirusPotionCommand(SAGE19 plugin) {
         this.plugin = plugin;
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
-
         if (!sender.hasPermission("sage19.admin")) {
             sender.sendMessage(ChatColor.RED + "You lack permission.");
             return true;
         }
 
         if (args.length != 1) {
-            sender.sendMessage(ChatColor.YELLOW + "Usage: /givevirusculture <player>");
+            sender.sendMessage(ChatColor.YELLOW + "Usage: /giveconcentratedviruspotion <player>");
             return false;
         }
 
@@ -38,10 +35,10 @@ public class GiveVirusCultureCommand implements CommandExecutor {
             return true;
         }
 
-        ItemStack virusCulture = createVirusCulture(plugin);
+        ItemStack potion = BrewingListener.createPureSagePotion(Material.POTION);
 
-        target.getInventory().addItem(virusCulture);
-        target.sendMessage(Component.text("You have been given a Sagevirus Culture"));
+        target.getInventory().addItem(potion);
+        target.sendMessage("You have been given a concentrated Sagevirus potion.");
 
         return true;
     }

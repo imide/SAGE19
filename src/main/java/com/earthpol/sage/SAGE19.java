@@ -1,5 +1,7 @@
 package com.earthpol.sage;
 
+import com.earthpol.sage.vaccine.BrewingListener;
+import com.earthpol.sage.vaccine.GiveConcentratedVirusPotionCommand;
 import com.earthpol.sage.vaccine.GiveVirusCultureCommand;
 import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
 import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
@@ -76,6 +78,8 @@ public class SAGE19 extends JavaPlugin {
         getCommand("sage19").setExecutor(sageCmd);
         getCommand("sage19").setTabCompleter(new Sage19TabCompleter());
         getServer().getPluginManager().registerEvents(new CureListener(this), this);
+        getServer().getPluginManager().registerEvents(new BrewingListener(this), this);
+        getCommand("giveconcentratedviruspotion").setExecutor(new GiveConcentratedVirusPotionCommand(this));
 
         // Start global scanner
         scanner = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SAGE19-GlobalScanner"));
@@ -96,8 +100,7 @@ public class SAGE19 extends JavaPlugin {
         cureSuccessChance = getConfig().getDouble("cure-success-chance", 0.95);
         curingEnabled      = getConfig().getBoolean("curing-enabled", false);
         maskInfectionChance  = getConfig().getDouble("mask-infection-chance", 0.05);
-        pureInfectionDeathSeconds = getConfig().getInt("pure-infection-death-seconds", 120);
-        cultureDropChance = getConfig().getDouble("culture-drop-chance", 0.10);
+        cultureDropChance = getConfig().getDouble("culture-drop-chance", 0.05);
     }
 
     private void startScanner() {
@@ -168,11 +171,6 @@ public class SAGE19 extends JavaPlugin {
             p.sendMessage(ChatColor.RED + "You drank a concentrated mix of the Sagevirus. You will die in minutes.");
             EntityScheduler scheduler = p.getScheduler();
             pureInfectionGigatron3000(p, scheduler);
-            scheduler.runDelayed(this, (scheduledTask) -> {
-                p.sendMessage(ChatColor.RED + "You've succumbed to the infection.");
-                p.setHealth(0.0);
-                pureInfected.remove(p.getUniqueId());
-            }, null, secondsToTicks(pureInfectionDeathSeconds));
         }
     }
 
@@ -187,11 +185,29 @@ public class SAGE19 extends JavaPlugin {
         }
     }
 
+    public void vaccinatePlayer(Player p) {
+        if (isInfected(p.getUniqueId()) || isPureInfected(p.getUniqueId()) ) {
+            p.sendMessage(ChatColor.RED + "You cannot be vaccinated and infected at the same time.");
+            return;
+        }
+
+        if (vaccinated.add(p.getUniqueId())) {
+            p.sendMessage(ChatColor.GREEN + "You have been vaccinated against SAGE-19!");
+            p.sendMessage("Please note this does NOT effect pure infections...");
+            savePlayerData(p);
+        }
+
+    }
+
     public long secondsToTicks(int seconds) {
         return 20L * seconds;
     }
     public boolean isInfected(UUID id) {
         return infected.contains(id);
+    }
+
+    public boolean isPureInfected(UUID id) {
+        return pureInfected.contains(id);
     }
 
     public boolean isVaccinated(UUID id) {
@@ -368,7 +384,7 @@ public class SAGE19 extends JavaPlugin {
             // Regeneration for 7 seconds and Poison for 5 seconds, both always show particles
             p.addPotionEffect(new PotionEffect(
                     PotionEffectType.REGENERATION,
-                    30 * 20,
+                    60 * 20,
                     3,
                     true,
                     false,
@@ -376,7 +392,7 @@ public class SAGE19 extends JavaPlugin {
             ));
             p.addPotionEffect(new PotionEffect(
                     PotionEffectType.POISON,
-                    20 * 20,
+                    50 * 20,
                     0,
                     true,
                     true,
@@ -393,13 +409,13 @@ public class SAGE19 extends JavaPlugin {
             // slowness 4
             p.addPotionEffect(new PotionEffect(
                     PotionEffectType.SLOWNESS,
-                    30 * 20,
+                    60 * 20,
                     4,
                     true,
                     false,
                     true
             ));
-        }), null, secondsToTicks(30));
+        }), null, secondsToTicks(60));
 
         // STAGE 4: Death
         // Max levitation for 3 seconds, ender dragon death sound, and then release. (pearl jam reference)
@@ -409,13 +425,19 @@ public class SAGE19 extends JavaPlugin {
 
             p.addPotionEffect(new PotionEffect(
                     PotionEffectType.LEVITATION,
-                    20,
+                    10,
                     255,
                     true,
                     false,
                     false
             ));
-        }), null, secondsToTicks(30));
+        }), null, secondsToTicks(120));
+
+        s.runDelayed(this, (scheduledTask -> {
+            p.sendMessage(ChatColor.RED + "You've succumbed to the infection.");
+            p.setHealth(0.0);
+            pureInfected.remove(p.getUniqueId());
+        }), null, secondsToTicks(121));
 
     }
 
@@ -502,30 +524,6 @@ public class SAGE19 extends JavaPlugin {
             sender.sendMessage(ChatColor.RED + "Invalid number: " + args[1]);
         }
     }
-
-    public ItemStack createVirusCulture() {
-        // ItemStack for the culture
-        ItemStack virusCulture = new ItemStack(Material.FERMENTED_SPIDER_EYE);
-
-        ItemMeta meta = virusCulture.getItemMeta();
-
-        meta.displayName(Component.text("Sagevirus Culture", NamedTextColor.RED, TextDecoration.BOLD));
-
-        // lore
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("A highly contagious sample of Sagevirus", NamedTextColor.GRAY));
-        lore.add(Component.translatable("I wonder what I can do with it...", NamedTextColor.GRAY, TextDecoration.ITALIC));
-        meta.lore(lore);
-
-        // custom PDT
-        NamespacedKey key = new NamespacedKey(this, "sagevirus_culture");
-        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, "SAGEVIRUS_CULTURE");
-
-        virusCulture.setItemMeta(meta);
-
-        return virusCulture;
-    }
-
 
     private class Sage19Command implements CommandExecutor {
         private final SAGE19 plugin;
