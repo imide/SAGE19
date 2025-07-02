@@ -92,7 +92,7 @@ public class BrewingListener implements Listener {
                     results.set(i, createPureSagePotion(Material.POTION));
                 }
             }
-            return;
+            return; // handled recipe
         }
 
         if (ingredient.getType() == Material.GUNPOWDER) {
@@ -108,10 +108,14 @@ public class BrewingListener implements Listener {
             }
 
             if (customPotionFound) event.setCancelled(false);
-            return;
+            return; // handled recipe
         }
 
         if (ingredient.getType() == Material.NETHERITE_SCRAP) {
+            if (ingredient.getAmount() < 4) {
+                event.setCancelled(true); // cancel the brew
+                return;
+            }
             boolean customPotionFound = false;
             for (int i = 0; i < results.size(); i++) {
                 ItemStack originalPotion = results.get(i);
@@ -123,7 +127,17 @@ public class BrewingListener implements Listener {
                     customPotionFound = true;
                 }
             }
-            if (customPotionFound) event.setCancelled(false);
+            if (customPotionFound) {
+                event.setCancelled(false);
+
+                // Manually subtract 4 scraps
+                int newAmount = ingredient.getAmount() - 4;
+                if (newAmount > 0) {
+                    ingredient.setAmount(newAmount);
+                } else {
+                    inventory.setIngredient(null);
+                }
+            }
         }
     }
 
