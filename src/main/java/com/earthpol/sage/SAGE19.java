@@ -1,13 +1,10 @@
 package com.earthpol.sage;
 
-import com.earthpol.sage.vaccine.BrewingListener;
-import com.earthpol.sage.vaccine.GiveConcentratedVirusPotionCommand;
-import com.earthpol.sage.vaccine.GiveVirusCultureCommand;
+import com.earthpol.sage.vaccine.*;
 import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
 import io.papermc.paper.threadedregions.scheduler.RegionScheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -16,8 +13,6 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -25,11 +20,7 @@ import org.bukkit.potion.PotionEffectType;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class SAGE19 extends JavaPlugin {
@@ -49,9 +40,9 @@ public class SAGE19 extends JavaPlugin {
     private double cureSuccessChance;
     private boolean curingEnabled;
     private double maskInfectionChance;
-    private int pureInfectionDeathSeconds;
-
     private double cultureDropChance;
+    private double pureInfectSplashChance;
+
 
     public boolean isCuringEnabled() {
         return curingEnabled;
@@ -61,12 +52,19 @@ public class SAGE19 extends JavaPlugin {
         return cureSuccessChance;
     }
 
+    public double getPureInfectSplashChance() {
+        return pureInfectSplashChance;
+    }
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
         loadConfigValues();
         loadInfectedData();
         reapplyEffects();
+
+        PotionManager potionManager = new PotionManager(this);
+        potionManager.registerRecipes();
 
         // Register listeners and commands
         getServer().getPluginManager().registerEvents(new InfectionListener(this), this);
@@ -79,6 +77,7 @@ public class SAGE19 extends JavaPlugin {
         getCommand("sage19").setTabCompleter(new Sage19TabCompleter());
         getServer().getPluginManager().registerEvents(new CureListener(this), this);
         getServer().getPluginManager().registerEvents(new BrewingListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerPotionListener(this), this);
         getCommand("giveconcentratedviruspotion").setExecutor(new GiveConcentratedVirusPotionCommand(this));
 
         // Start global scanner
@@ -96,11 +95,12 @@ public class SAGE19 extends JavaPlugin {
         intervalSeconds = getConfig().getInt("infection-interval-seconds", 300);
         proximityRadius = getConfig().getDouble("proximity-radius", 10.0);
         proximityChance = getConfig().getDouble("proximity-chance", 0.5);
-        hitChance       = getConfig().getDouble("hit-chance", 0.25);
+        hitChance = getConfig().getDouble("hit-chance", 0.25);
         cureSuccessChance = getConfig().getDouble("cure-success-chance", 0.95);
-        curingEnabled      = getConfig().getBoolean("curing-enabled", false);
-        maskInfectionChance  = getConfig().getDouble("mask-infection-chance", 0.05);
+        curingEnabled = getConfig().getBoolean("curing-enabled", false);
+        maskInfectionChance = getConfig().getDouble("mask-infection-chance", 0.05);
         cultureDropChance = getConfig().getDouble("culture-drop-chance", 0.05);
+        pureInfectSplashChance = getConfig().getDouble("pure-infect-splash-chance", 0.25);
     }
 
     private void startScanner() {
@@ -166,9 +166,10 @@ public class SAGE19 extends JavaPlugin {
         }
     }
 
+
     public void pureInfectPlayer(Player p) {
         if (pureInfected.add(p.getUniqueId())) {
-            p.sendMessage(ChatColor.RED + "You drank a concentrated mix of the Sagevirus. You will die in minutes.");
+            p.sendMessage(ChatColor.RED + "You've been infected from a concentrated, lab-engineered mix of the Sagevirus. You will die in minutes.");
             EntityScheduler scheduler = p.getScheduler();
             pureInfectionGigatron3000(p, scheduler);
         }
@@ -186,7 +187,7 @@ public class SAGE19 extends JavaPlugin {
     }
 
     public void vaccinatePlayer(Player p) {
-        if (isInfected(p.getUniqueId()) || isPureInfected(p.getUniqueId()) ) {
+        if (isInfected(p.getUniqueId()) || isPureInfected(p.getUniqueId())) {
             p.sendMessage(ChatColor.RED + "You cannot be vaccinated and infected at the same time.");
             return;
         }
@@ -202,6 +203,7 @@ public class SAGE19 extends JavaPlugin {
     public long secondsToTicks(int seconds) {
         return 20L * seconds;
     }
+
     public boolean isInfected(UUID id) {
         return infected.contains(id);
     }
@@ -240,12 +242,12 @@ public class SAGE19 extends JavaPlugin {
     private void randomEvent(Player p) {
         double rand = Math.random();
         // Approximately equal 1-in-6 chance for each event
-        if (rand < 1.0/6) {
+        if (rand < 1.0 / 6) {
             // Nothing happens
-        } else if (rand < 2.0/6) {
+        } else if (rand < 2.0 / 6) {
             // Panda sneeze sound
             p.playSound(p.getLocation(), Sound.ENTITY_PANDA_SNEEZE, 0.5f, 1f);
-        } else if (rand < 3.0/6) {
+        } else if (rand < 3.0 / 6) {
             // Nausea (Confusion) for 4 seconds, always show particles
             p.addPotionEffect(new PotionEffect(
                     PotionEffectType.NAUSEA,
@@ -255,7 +257,7 @@ public class SAGE19 extends JavaPlugin {
                     false,
                     true
             ));
-        } else if (rand < 4.0/6) {
+        } else if (rand < 4.0 / 6) {
             // Blindness level 5 for 2 seconds, always show particles
             p.addPotionEffect(new PotionEffect(
                     PotionEffectType.BLINDNESS,
@@ -265,7 +267,7 @@ public class SAGE19 extends JavaPlugin {
                     false,
                     true
             ));
-        } else if (rand < 5.0/6) {
+        } else if (rand < 5.0 / 6) {
             // Hunger for 5 seconds, always show particles
             p.addPotionEffect(new PotionEffect(
                     PotionEffectType.HUNGER,
@@ -437,6 +439,12 @@ public class SAGE19 extends JavaPlugin {
             p.sendMessage(ChatColor.RED + "You've succumbed to the infection.");
             p.setHealth(0.0);
             pureInfected.remove(p.getUniqueId());
+
+            final Collection<Player> players = (Collection<Player>) getServer().getOnlinePlayers();
+            for (final Player player : players) {
+                Component messageText = Component.text(p.getName() + " has succumbed to a lab-engineered Sagevirus infection...", NamedTextColor.RED);
+                player.sendMessage(messageText);
+            }
         }), null, secondsToTicks(121));
 
     }
@@ -447,7 +455,8 @@ public class SAGE19 extends JavaPlugin {
     }
 
     private void savePlayerData(Player p) {
-        File dir = new File(getDataFolder(), "playerdata"); if (!dir.exists()) dir.mkdirs();
+        File dir = new File(getDataFolder(), "playerdata");
+        if (!dir.exists()) dir.mkdirs();
         File file = new File(dir, p.getUniqueId() + ".yml");
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
         cfg.set("isInfected", infected.contains(p.getUniqueId()));
@@ -457,26 +466,35 @@ public class SAGE19 extends JavaPlugin {
 
         cfg.set("isVaccinated", vaccinated.contains(p.getUniqueId()));
         cfg.set("vaccinatedAt", System.currentTimeMillis());
-        try { cfg.save(file); } catch (IOException ignored) {}
+        try {
+            cfg.save(file);
+        } catch (IOException ignored) {
+        }
     }
 
     private void loadInfectedData() {
         File dir = new File(getDataFolder(), "playerdata");
         if (!dir.exists()) return;
-        for (File f : Objects.requireNonNull(dir.listFiles((d,n)->n.endsWith(".yml")))) {
+        for (File f : Objects.requireNonNull(dir.listFiles((d, n) -> n.endsWith(".yml")))) {
             YamlConfiguration cfg = YamlConfiguration.loadConfiguration(f);
             UUID uuid = UUID.fromString(f.getName().replace(".yml", ""));
             if (cfg.getBoolean("isInfected", false)) {
-                try { infected.add(uuid); }
-                catch (IllegalArgumentException e) {}
+                try {
+                    infected.add(uuid);
+                } catch (IllegalArgumentException e) {
+                }
             }
             if (cfg.getBoolean("isPureInfected", false)) {
-                try { pureInfected.add(uuid); }
-                catch (IllegalArgumentException e) {}
+                try {
+                    pureInfected.add(uuid);
+                } catch (IllegalArgumentException e) {
+                }
             }
             if (cfg.getBoolean("isVaccinated", false)) {
-                try { vaccinated.add(uuid); }
-                catch (IllegalArgumentException e) {}
+                try {
+                    vaccinated.add(uuid);
+                } catch (IllegalArgumentException e) {
+                }
             }
         }
     }
@@ -514,6 +532,9 @@ public class SAGE19 extends JavaPlugin {
                     maskInfectionChance = Double.parseDouble(args[1]);
                     getConfig().set("mask-infection-chance", maskInfectionChance);
                     break;
+                case "pureinfectsplashchance":
+                    pureInfectSplashChance = Double.parseDouble(args[1]);
+                    getConfig().set("pureinfect-splash-chance", pureInfectSplashChance);
                 default:
                     sender.sendMessage(ChatColor.RED + "Unknown setting: " + key);
                     return;
@@ -527,8 +548,13 @@ public class SAGE19 extends JavaPlugin {
 
     private class Sage19Command implements CommandExecutor {
         private final SAGE19 plugin;
-        Sage19Command(SAGE19 plugin) { this.plugin = plugin; }
-        @Override public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+
+        Sage19Command(SAGE19 plugin) {
+            this.plugin = plugin;
+        }
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
             if (args.length == 0) {
                 int total = plugin.infected.size();
                 long online = plugin.infected.stream()
@@ -572,8 +598,10 @@ public class SAGE19 extends JavaPlugin {
     }
 
     private class Sage19TabCompleter implements TabCompleter {
-        private final List<String> keys = Arrays.asList("interval","radius","proximitychance","hitchance", "curesuccesschance", "maskchance", "enable", "disable");
-        @Override public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
+        private final List<String> keys = Arrays.asList("interval", "radius", "proximitychance", "hitchance", "curesuccesschance", "maskchance", "enable", "disable");
+
+        @Override
+        public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
             if (args.length == 1) {
                 return keys.stream()
                         .filter(k -> k.startsWith(args[0].toLowerCase()))

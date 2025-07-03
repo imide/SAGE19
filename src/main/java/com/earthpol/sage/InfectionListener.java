@@ -1,15 +1,11 @@
 package com.earthpol.sage;
 
 import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 public class InfectionListener implements Listener {
     private final SAGE19 plugin;
@@ -22,7 +18,7 @@ public class InfectionListener implements Listener {
     @EventHandler
     public void onEntityDamageByEntity(EntityDamageByEntityEvent evt) {
         if (evt.getDamager() instanceof Player damager &&
-                evt.getEntity()   instanceof Player victim &&
+                evt.getEntity() instanceof Player victim &&
                 plugin.isInfected(damager.getUniqueId()) &&
                 !plugin.isInfected(victim.getUniqueId()) &&
                 Math.random() < plugin.getHitChance()) {

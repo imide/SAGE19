@@ -40,7 +40,7 @@ public class SageVirusCultureFactory {
         return virusCulture;
     }
 
-    public static boolean isVirusCulture(@NotNull ItemStack item,@NotNull Plugin plugin) {
+    public static boolean isVirusCulture(@NotNull ItemStack item, @NotNull Plugin plugin) {
         if (!item.hasItemMeta()) return false;
 
         ItemMeta meta = item.getItemMeta();

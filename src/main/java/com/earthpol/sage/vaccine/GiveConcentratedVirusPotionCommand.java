@@ -35,7 +35,7 @@ public class GiveConcentratedVirusPotionCommand implements CommandExecutor {
             return true;
         }
 
-        ItemStack potion = BrewingListener.createPureSagePotion(Material.POTION);
+        ItemStack potion = PotionManager.createPureSagePotion(Material.POTION);
 
         target.getInventory().addItem(potion);
         target.sendMessage("You have been given a concentrated Sagevirus potion.");

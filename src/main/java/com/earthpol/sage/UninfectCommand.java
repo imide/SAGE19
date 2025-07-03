@@ -1,7 +1,9 @@
 package com.earthpol.sage;
 
 import org.bukkit.ChatColor;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class UninfectCommand implements CommandExecutor {
