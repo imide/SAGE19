@@ -23,7 +23,7 @@ public class BrewingListener implements Listener {
 
         if (
                 ingredient == null ||
-                        ingredient.getType() != Material.NETHERITE_SCRAP ||
+                        ingredient.getType() != Material.DIAMOND ||
                         ingredient.getAmount() < 4
         ) {
             return;
@@ -33,6 +33,7 @@ public class BrewingListener implements Listener {
                 plugin,
                 event.getBlock().getLocation(),
                 () -> {
+                    // The brewing stand already consumes 1 item, so - 3 makes it 4. glad we know simple math
                     ingredient.setAmount(ingredient.getAmount() - 3);
                 });
     }

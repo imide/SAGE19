@@ -147,7 +147,7 @@ public class PotionManager {
     private void registerVaccineMix() {
         RecipeChoice fourScrapsChoice = PotionMix.createPredicateChoice(
                 item ->
-                        item.getType() == Material.NETHERITE_SCRAP && item.getAmount() >= 4
+                        item.getType() == Material.DIAMOND && item.getAmount() >= 4
         );
 
         PotionMix mix = new PotionMix(
