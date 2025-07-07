@@ -1,5 +1,5 @@
 name: SAGE19
-version: '1.0.0'
+version: '1.1.0'
 main: com.earthpol.sage.SAGE19
 api-version: '1.21'
 authors: [ 0xBit ]
@@ -14,9 +14,17 @@ commands:
     description: Cure a player of SAGE19.
     usage: /uninfect <player>
     permission: sage19.admin
+  givevirusculture:
+    description: give a player a culture of sage19
+    usage: /givevirusculture <player>
+    permission: sage19.admin
   sage19:
     description: “Modify SAGE19 settings on the fly (interval, radius, proximityChance, hitChance)”
     usage: “/sage19 <setting> <value>”
+  giveconcentratedviruspotion:
+    description: give a player concentrated virus potion
+    usage: /giveconcentratedviruspotion <player>
+    permission: sage19.admin
 permissions:
   sage19.admin:
     description: Allows use of /infect, /sage19 and /uninfect commands.

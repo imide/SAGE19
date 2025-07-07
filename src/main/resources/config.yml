@@ -18,3 +18,9 @@ curing-enabled: false
 
 # Chance [0.0–1.0] that a carved‐pumpkin wearer still gets infected
 mask-infection-chance: 0.05
+
+# The chance of a culture dropping from a cured person (5% default)
+culture-drop-chance: 0.05
+
+# the chance of a player being pure infected from a splash potion (default 25%)
+pure-infect-splash-chance: 0.25
